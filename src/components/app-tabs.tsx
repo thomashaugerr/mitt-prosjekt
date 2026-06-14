@@ -1,44 +1,65 @@
 import { Tabs } from 'expo-router';
-import { Image, useColorScheme } from 'react-native';
+import { Platform, Text } from 'react-native';
+import { SymbolView } from 'expo-symbols';
 
 import { Colors } from '@/constants/theme';
 
-export default function AppTabs() {
-  const scheme = useColorScheme();
-  const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
+const C = Colors.dark;
 
+type TabIconProps = { name: string; fallback: string; color: string; size?: number };
+
+function TabIcon({ name, fallback, color, size = 22 }: TabIconProps) {
+  if (Platform.OS === 'ios') {
+    return <SymbolView name={name as any} size={size} tintColor={color} />;
+  }
+  return <Text style={{ fontSize: size - 4, color }}>{fallback}</Text>;
+}
+
+export default function AppTabs() {
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarStyle: { backgroundColor: colors.background },
-        tabBarActiveTintColor: colors.text,
-        tabBarInactiveTintColor: colors.textSecondary,
+        tabBarStyle: {
+          backgroundColor: C.background,
+          borderTopColor: C.border,
+          borderTopWidth: 1,
+        },
+        tabBarActiveTintColor: C.accent,
+        tabBarInactiveTintColor: C.textSecondary,
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '500' },
       }}>
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => (
-            <Image
-              source={require('@/assets/images/tabIcons/home.png')}
-              style={{ width: 24, height: 24, tintColor: color }}
-            />
-          ),
+          title: 'I dag',
+          tabBarIcon: ({ color }) => <TabIcon name="house.fill" fallback="🏠" color={color} />,
         }}
       />
       <Tabs.Screen
-        name="explore"
+        name="log"
         options={{
-          title: 'Explore',
+          title: 'Logg mat',
+          tabBarIcon: ({ color }) => <TabIcon name="fork.knife" fallback="🍽" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="whoop"
+        options={{
+          title: 'Whoop',
+          tabBarIcon: ({ color }) => <TabIcon name="heart.fill" fallback="❤️" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="profil"
+        options={{
+          title: 'Profil',
           tabBarIcon: ({ color }) => (
-            <Image
-              source={require('@/assets/images/tabIcons/explore.png')}
-              style={{ width: 24, height: 24, tintColor: color }}
-            />
+            <TabIcon name="person.crop.circle.fill" fallback="👤" color={color} />
           ),
         }}
       />
+      <Tabs.Screen name="explore" options={{ href: null }} />
     </Tabs>
   );
 }
