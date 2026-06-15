@@ -65,7 +65,7 @@ export function useWhoop() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const redirectUri = AuthSession.makeRedirectUri();
+  const redirectUri = 'pt-app://callback';
 
   const discovery = {
     authorizationEndpoint: AUTH_URL,
