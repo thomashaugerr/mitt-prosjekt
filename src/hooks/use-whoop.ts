@@ -53,7 +53,10 @@ async function fetchWithAuth(url: string, tokens: WhoopTokens) {
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${tokens.accessToken}` },
   });
-  if (!res.ok) throw new Error(`WHOOP API ${res.status}`);
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`WHOOP ${res.status}: ${body}`);
+  }
   return res.json();
 }
 
@@ -111,6 +114,9 @@ export function useWhoop() {
           body: body.toString(),
         });
         const data = await res.json();
+        if (!res.ok || !data.access_token) {
+          throw new Error(data.error_description ?? data.error ?? `Token exchange ${res.status}`);
+        }
         const t: WhoopTokens = {
           accessToken: data.access_token,
           refreshToken: data.refresh_token,
@@ -119,7 +125,9 @@ export function useWhoop() {
         await storeSet(TOKEN_KEY, JSON.stringify(t));
         setTokens(t);
       } catch (e) {
-        setError('Tilkobling til WHOOP feilet');
+        const msg = e instanceof Error ? e.message : String(e);
+        console.error('WHOOP token exchange feilet:', msg);
+        setError(`Tilkobling til WHOOP feilet: ${msg}`);
       } finally {
         setLoading(false);
       }
@@ -149,9 +157,10 @@ export function useWhoop() {
 
       const sl = sleepData.records?.[0];
       if (sl) {
+        const durationMs = new Date(sl.end).getTime() - new Date(sl.start).getTime();
         setSleep({
-          score: Math.round(sl.score.stage_summary.sleep_efficiency_percentage ?? 0),
-          durationHours: Math.round((sl.end - sl.start) / 3600000 * 10) / 10,
+          score: Math.round(sl.score?.sleep_efficiency_percentage ?? 0),
+          durationHours: Math.round((durationMs / 3600000) * 10) / 10,
           date: sl.start,
         });
       }
@@ -165,7 +174,9 @@ export function useWhoop() {
         });
       }
     } catch (e) {
-      setError('Kunne ikke hente WHOOP-data');
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error('WHOOP fetchData feilet:', msg);
+      setError(`Kunne ikke hente WHOOP-data: ${msg}`);
     } finally {
       setLoading(false);
     }
