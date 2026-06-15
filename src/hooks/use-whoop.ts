@@ -146,9 +146,9 @@ export function useWhoop() {
     setError(null);
     try {
       const [recData, sleepData, cycleData] = await Promise.all([
-        fetchWithAuth('https://api.prod.whoop.com/developer/v1/recovery?limit=1', tokens),
-        fetchWithAuth('https://api.prod.whoop.com/developer/v1/sleep?limit=1', tokens),
-        fetchWithAuth('https://api.prod.whoop.com/developer/v1/cycle?limit=1', tokens),
+        fetchWithAuth('https://api.prod.whoop.com/developer/v2/recovery?limit=1', tokens),
+        fetchWithAuth('https://api.prod.whoop.com/developer/v2/activity/sleep?limit=1', tokens),
+        fetchWithAuth('https://api.prod.whoop.com/developer/v2/cycle?limit=1', tokens),
       ]);
 
       const rec = recData.records?.[0];
@@ -172,7 +172,7 @@ export function useWhoop() {
       }
 
       const cy = cycleData.records?.[0];
-      if (cy) {
+      if (cy?.score) {
         setStrain({
           score: Math.round(cy.score.strain * 10) / 10,
           kilojoules: Math.round(cy.score.kilojoule),
