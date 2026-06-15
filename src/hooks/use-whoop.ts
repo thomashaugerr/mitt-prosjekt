@@ -109,13 +109,13 @@ export function useWhoop() {
           code,
           redirect_uri: redirectUri,
           code_verifier: request?.codeVerifier ?? '',
+          client_id: CLIENT_ID,
+          client_secret: clientSecret ?? '',
         });
-        const credentials = btoa(`${CLIENT_ID}:${clientSecret ?? ''}`);
         const res = await fetch(TOKEN_URL, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
-            Authorization: `Basic ${credentials}`,
           },
           body: body.toString(),
         });
