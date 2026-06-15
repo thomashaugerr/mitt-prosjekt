@@ -7,12 +7,12 @@ import { Platform } from 'react-native';
 WebBrowser.maybeCompleteAuthSession();
 
 const CLIENT_ID = process.env.EXPO_PUBLIC_WHOOP_CLIENT_ID ?? '';
-const CLIENT_SECRET = process.env.EXPO_PUBLIC_WHOOP_CLIENT_SECRET ?? '';
 const AUTH_URL = 'https://api.prod.whoop.com/oauth/oauth2/auth';
 const TOKEN_URL = 'https://api.prod.whoop.com/oauth/oauth2/token';
 const SCOPES = ['read:profile', 'read:recovery', 'read:sleep', 'read:cycles', 'offline'];
 
 const TOKEN_KEY = 'pt_whoop_tokens_v1';
+const SECRET_KEY = 'pt_whoop_secret_v1';
 
 type WhoopTokens = { accessToken: string; refreshToken: string; expiresAt: number };
 
@@ -63,6 +63,7 @@ async function fetchWithAuth(url: string, tokens: WhoopTokens) {
 
 export function useWhoop() {
   const [tokens, setTokens] = useState<WhoopTokens | null>(null);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [recovery, setRecovery] = useState<WhoopRecovery | null>(null);
   const [sleep, setSleep] = useState<WhoopSleep | null>(null);
   const [strain, setStrain] = useState<WhoopStrain | null>(null);
@@ -87,10 +88,11 @@ export function useWhoop() {
     discovery
   );
 
-  // Load saved tokens on mount
+  // Load saved tokens and secret on mount
   useEffect(() => {
-    storeGet(TOKEN_KEY).then((raw) => {
-      if (raw) setTokens(JSON.parse(raw));
+    Promise.all([storeGet(TOKEN_KEY), storeGet(SECRET_KEY)]).then(([rawTokens, rawSecret]) => {
+      if (rawTokens) setTokens(JSON.parse(rawTokens));
+      if (rawSecret) setClientSecret(rawSecret);
     });
   }, []);
 
@@ -108,7 +110,7 @@ export function useWhoop() {
           redirect_uri: redirectUri,
           code_verifier: request?.codeVerifier ?? '',
         });
-        const credentials = btoa(`${CLIENT_ID}:${CLIENT_SECRET}`);
+        const credentials = btoa(`${CLIENT_ID}:${clientSecret ?? ''}`);
         const res = await fetch(TOKEN_URL, {
           method: 'POST',
           headers: {
@@ -190,11 +192,16 @@ export function useWhoop() {
     if (tokens) fetchData();
   }, [tokens]);
 
-  const connect = useCallback(() => promptAsync(), [promptAsync]);
+  const connect = useCallback(async (secret: string) => {
+    await storeSet(SECRET_KEY, secret);
+    setClientSecret(secret);
+    promptAsync();
+  }, [promptAsync]);
 
   const disconnect = useCallback(async () => {
-    await storeDel(TOKEN_KEY);
+    await Promise.all([storeDel(TOKEN_KEY), storeDel(SECRET_KEY)]);
     setTokens(null);
+    setClientSecret(null);
     setRecovery(null);
     setSleep(null);
     setStrain(null);
@@ -204,6 +211,7 @@ export function useWhoop() {
 
   return {
     connected: !!tokens,
+    hasSecret: !!clientSecret,
     recovery,
     sleep,
     strain,

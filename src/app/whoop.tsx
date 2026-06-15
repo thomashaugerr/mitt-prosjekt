@@ -1,4 +1,5 @@
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BottomTabInset, Colors, Spacing } from '@/constants/theme';
@@ -26,7 +27,8 @@ function recoveryColor(score: number) {
 
 export default function WhoopScreen() {
   const insets = useSafeAreaInsets();
-  const { connected, recovery, sleep, strain, kcalBurned, loading, error, connect, disconnect, refresh } = useWhoop();
+  const { connected, hasSecret, recovery, sleep, strain, kcalBurned, loading, error, connect, disconnect, refresh } = useWhoop();
+  const [secretInput, setSecretInput] = useState('');
 
   return (
     <ScrollView
@@ -43,15 +45,32 @@ export default function WhoopScreen() {
           <Text style={styles.connectIcon}>❤️</Text>
           <Text style={styles.connectTitle}>Koble til WHOOP</Text>
           <Text style={styles.connectDesc}>
-            Se recovery, søvn og strain direkte i appen. Koble til din WHOOP-konto for å komme i gang.
+            Se recovery, søvn og strain direkte i appen. Lim inn Client Secret fra WHOOP Developer Portal.
           </Text>
-          <Pressable style={styles.connectBtn} onPress={connect} disabled={loading}>
+          <View style={styles.secretField}>
+            <Text style={styles.secretLabel}>Client Secret</Text>
+            <TextInput
+              style={styles.secretInput}
+              value={secretInput}
+              onChangeText={setSecretInput}
+              placeholder={hasSecret ? '••••••••  (lagret)' : 'Lim inn client secret'}
+              placeholderTextColor={C.textSecondary}
+              secureTextEntry
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          </View>
+          <Pressable
+            style={[styles.connectBtn, !(secretInput || hasSecret) && styles.connectBtnDisabled]}
+            onPress={() => connect(secretInput || '')}
+            disabled={loading || !(secretInput || hasSecret)}>
             {loading ? (
               <ActivityIndicator color="#000" />
             ) : (
               <Text style={styles.connectBtnText}>Koble til WHOOP</Text>
             )}
           </Pressable>
+          {error && <Text style={styles.errorText}>{error}</Text>}
         </View>
       ) : (
         <>
@@ -63,6 +82,7 @@ export default function WhoopScreen() {
           )}
 
           {error && <Text style={styles.errorText}>{error}</Text>}
+
 
           {/* Recovery */}
           {recovery && (
@@ -179,6 +199,17 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   connectBtnText: { color: '#000', fontSize: 16, fontWeight: '700' },
+  connectBtnDisabled: { backgroundColor: C.backgroundSelected },
+  secretField: { alignSelf: 'stretch', gap: 6 },
+  secretLabel: { color: C.textSecondary, fontSize: 12, fontWeight: '600' },
+  secretInput: {
+    backgroundColor: C.backgroundSelected,
+    color: C.text,
+    borderRadius: 10,
+    paddingHorizontal: Spacing.two + 4,
+    paddingVertical: Spacing.two,
+    fontSize: 15,
+  },
   loadingRow: { flexDirection: 'row', gap: Spacing.two, alignItems: 'center' },
   loadingText: { color: C.textSecondary, fontSize: 14 },
   errorText: { color: C.danger, fontSize: 14 },
