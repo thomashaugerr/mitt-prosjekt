@@ -7,9 +7,10 @@ import { Platform } from 'react-native';
 WebBrowser.maybeCompleteAuthSession();
 
 const CLIENT_ID = process.env.EXPO_PUBLIC_WHOOP_CLIENT_ID ?? '';
+const CLIENT_SECRET = process.env.EXPO_PUBLIC_WHOOP_CLIENT_SECRET ?? '';
 const AUTH_URL = 'https://api.prod.whoop.com/oauth/oauth2/auth';
 const TOKEN_URL = 'https://api.prod.whoop.com/oauth/oauth2/token';
-const SCOPES = ['read:profile', 'read:recovery', 'read:sleep', 'read:workout', 'offline'];
+const SCOPES = ['read:profile', 'read:recovery', 'read:sleep', 'read:cycles', 'offline'];
 
 const TOKEN_KEY = 'pt_whoop_tokens_v1';
 
@@ -105,12 +106,15 @@ export function useWhoop() {
           grant_type: 'authorization_code',
           code,
           redirect_uri: redirectUri,
-          client_id: CLIENT_ID,
           code_verifier: request?.codeVerifier ?? '',
         });
+        const credentials = btoa(`${CLIENT_ID}:${CLIENT_SECRET}`);
         const res = await fetch(TOKEN_URL, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            Authorization: `Basic ${credentials}`,
+          },
           body: body.toString(),
         });
         const data = await res.json();
